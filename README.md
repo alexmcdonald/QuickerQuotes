@@ -1,18 +1,17 @@
-# Salesforce DX Project: Next Steps
+# Quicker Quotes
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+Quicker Quotes aims to simplify the Salesforce standard quoting process.  It provides a sample flow that captures the minimal information needed to create a related opportunity and quote, and includes a quick-entry Products Table.  After adding the products, quantities and discounts, the flow automatically generates a PDF ready to send to the customer.
 
-## How Do You Plan to Deploy Your Changes?
+## Installation Requirements & Setup
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+* The component should only be installed in orgs after the Quoting functionality has been turned on (Setup -> Quote Settings -> Enable)
+* Following install, add the "New Quicker Quote" action to any Account Page Layouts you want to initiate Quicker Quotes from.
+* The first time the action is run the Flow will prompt the user to enter default settings for the component, such as the Opportunity Stage Name to use, the default Quote validity time, and the Quote Document template to use.
 
-## Configure Your Salesforce DX Project
+## Components
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+Quicker Quotes includes a few custom components:
 
-## Read All About It
-
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+qqProductsTable: Custom Lightning Web Component (LWC) that streamlines the entry of Quote Line Items
+QQ_CreateQuotePDF: Custom Apex Action to generate the PDF quote
+QQ_NavigateToRecord: Flow Action Component to redirect the user to the newly created Quote at the end of the flow.
