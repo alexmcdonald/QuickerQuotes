@@ -13,5 +13,7 @@ Quicker Quotes aims to simplify the Salesforce standard quoting process.  It pro
 Quicker Quotes includes a few custom components:
 
 qqProductsTable: Custom Lightning Web Component (LWC) that streamlines the entry of Quote Line Items
+
 QQ_CreateQuotePDF: Custom Apex Action to generate the PDF quote
+
 QQ_NavigateToRecord: Flow Action Component to redirect the user to the newly created Quote at the end of the flow.
