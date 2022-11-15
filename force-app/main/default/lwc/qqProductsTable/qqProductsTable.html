@@ -94,13 +94,25 @@
                 <!-- Product Search -->
                 <th colspan="2" class="slds-cell-edit slds-cell_action-mode" scope="row">
                   <div class="slds-combobox-container">
-                    <div class="slds-combobox slds-dropdown-trigger">
-                      <lightning-input data-searchinput={quoteline.index} data-lineindex={quoteline.index}
-                        value={searchTerm} onkeydown={searchKeyDownHandler} onchange={searchChangeHandler}
-                        onblur={searchBlurHandler} name="product-search" label="Product Search"
-                        placeholder="Search SKU, Name, etc." type="search" variant="label-hidden">
-                      </lightning-input>
-                    </div>
+                    <template if:true={quoteline.last}>
+                      <div class="slds-combobox slds-dropdown-trigger slds-show_inline-block" style="min-width: calc(100% - 30px); max-width: calc(100% - 30px);">
+                        <lightning-input class="slds-size_1-of-1" data-searchinput={quoteline.index} data-lineindex={quoteline.index}
+                          value={searchTerm} onkeydown={searchKeyDownHandler} onchange={searchChangeHandler}
+                          onblur={searchBlurHandler} name="product-search" label="Product Search"
+                          placeholder="Search SKU, Name, etc." type="search" variant="label-hidden">
+                        </lightning-input>
+                      </div>
+                      <div class="slds-show_inline-block slds-m-left_small" tabindex="-1"><lightning-button-icon data-lineindex={quoteline.index} icon-name="utility:expand_alt" variant="bare" onclick={modalSearchHandler} tabindex="-1"></lightning-button-icon></div>
+                    </template>
+                    <template if:false={quoteline.last}>
+                      <div class="slds-combobox slds-dropdown-trigger slds-show_inline-block" style="min-width: 100%; max-width: 100%;">
+                        <lightning-input class="slds-size_1-of-1" data-searchinput={quoteline.index} data-lineindex={quoteline.index}
+                          value={searchTerm} onkeydown={searchKeyDownHandler} onchange={searchChangeHandler}
+                          onblur={searchBlurHandler} name="product-search" label="Product Search"
+                          placeholder="Search SKU, Name, etc." type="search" variant="label-hidden">
+                        </lightning-input>
+                      </div>
+                    </template>                 
                     <template if:true={showSearch}>
                       <div data-id="foundRecords"
                         class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">

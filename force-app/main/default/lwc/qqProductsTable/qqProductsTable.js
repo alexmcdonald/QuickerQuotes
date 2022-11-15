@@ -1,5 +1,6 @@
 import { LightningElement, track, api } from 'lwc';
-import { FlowAttributeChangeEvent} from 'lightning/flowSupport';
+import { FlowAttributeChangeEvent } from 'lightning/flowSupport';
+import qqProductsSearchModal from 'c/qqProductsSearchModal';
 
 import getResults from '@salesforce/apex/QQ_SearchPricebookEntries.getResults';
 
@@ -30,6 +31,8 @@ export default class QQProductsTable extends LightningElement {
 
     @track _quoteData = [];
 
+    modalResults = [];
+
     get quoteData() {
         return this._quoteData;
     }
@@ -45,13 +48,13 @@ export default class QQProductsTable extends LightningElement {
             getResults({ keyword: searchString, pricebookId: this.pricebookId })
                 .then(result => {
                     let count = result.count;
-                    if(count > 0) {
+                    if (count > 0) {
                         this.searchRecords = result.records;
                         this.showSearch = true;
                     } else {
                         this.showSearch = false;
                     }
-                    if(lineIndex >= 0) this.template.querySelector("[data-searchinput='" + lineIndex + "']").focus();    
+                    if (lineIndex >= 0) this.template.querySelector("[data-searchinput='" + lineIndex + "']").focus();
                 })
                 .catch(error => {
                     console.log(error.message);
@@ -59,7 +62,7 @@ export default class QQProductsTable extends LightningElement {
         } else {
             this.searchRecords = [];
             this.showSearch = false;
-            if(lineIndex >= 0) this.template.querySelector("[data-searchinput='" + lineIndex + "']").focus();
+            if (lineIndex >= 0) this.template.querySelector("[data-searchinput='" + lineIndex + "']").focus();
         }
     }
 
@@ -69,34 +72,88 @@ export default class QQProductsTable extends LightningElement {
         const lineIndex = event.currentTarget.dataset.lineindex;
         const selectedRecord = this.searchRecords[index];
         let line = {
-            PricebookEntryId : selectedRecord.Id,
-            Product2Id : selectedRecord.Product2Id,
-            ProductCode : selectedRecord.ProductCode,
-            ProductName : selectedRecord.Name,
-            UnitPrice : selectedRecord.UnitPrice,
-            Quantity : this._quoteData[lineIndex].Quantity,
-            Discount : this._quoteData[lineIndex].Discount,
-            key : lineIndex,
-            EditMode : false,
-            AllowDelete : true
+            PricebookEntryId: selectedRecord.Id,
+            Product2Id: selectedRecord.Product2Id,
+            ProductCode: selectedRecord.ProductCode,
+            ProductName: selectedRecord.Name,
+            UnitPrice: selectedRecord.UnitPrice,
+            Quantity: this._quoteData[lineIndex].Quantity,
+            Discount: this._quoteData[lineIndex].Discount,
+            key: lineIndex,
+            EditMode: false,
+            AllowDelete: true
         }
         this._quoteData[lineIndex] = line;
         this.calcLine(lineIndex);
         this.searchRecords = [];
         this.showSearch = false;
         this.searchTerm = null;
-        if(lineIndex == this._quoteData.length-1) {
+        if (lineIndex == this._quoteData.length - 1) {
             this.addLine(false);
         }
         this.reindexQuoteData();
-        this._quoteData[this._quoteData.length-1].EditMode = true;
+        this._quoteData[this._quoteData.length - 1].EditMode = true;
         try {
             let _this = this;
-            setTimeout(function () { 
-                let qs = _this.template.querySelector("[data-quantityinput='"+_this.activeLineIndex+"']");
+            setTimeout(function () {
+                let qs = _this.template.querySelector("[data-quantityinput='" + _this.activeLineIndex + "']");
                 qs.focus();
             }, 0);
-        } catch(error) {
+        } catch (error) {
+            console.log(error.message);
+        }
+
+    }
+
+    modalSearchHandler(event) {
+        const lineindex = event.currentTarget.dataset.lineindex;
+        qqProductsSearchModal.open({
+            label: 'Products Table',
+            size: 'large',
+            pricebookId: this.pricebookId
+        }).then((result) => {
+            if(typeof result !== 'undefined') {
+                if (result.length > 0) {
+                    this.modalResults = result;
+                    this.processModalResults();
+                }
+            }
+        });
+    }
+
+    processModalResults() {
+        this._quoteData.pop();
+        this.modalResults.forEach(selectedEntry => {
+            let lineIndex = this._quoteData.length;
+            let line = {
+                PricebookEntryId: selectedEntry.Id,
+                Product2Id: selectedEntry.Product2Id,
+                ProductCode: selectedEntry.ProductCode,
+                ProductName: selectedEntry.Name,
+                UnitPrice: selectedEntry.UnitPrice,
+                Quantity: null,
+                Discount: null,
+                key: lineIndex,
+                EditMode: false,
+                AllowDelete: true
+            }
+            this._quoteData.push(line);
+            this.calcLine(lineIndex);
+        });
+        this.modalResults = [];
+        this.searchRecords = [];
+        this.showSearch = false;
+        this.searchTerm = null;
+        this.addLine(false);
+        this.reindexQuoteData();
+        this._quoteData[this._quoteData.length - 1].EditMode = true;
+        try {
+            let _this = this;
+            setTimeout(function () {
+                let qs = _this.template.querySelector("[data-quantityinput='" + _this.activeLineIndex + "']");
+                qs.focus();
+            }, 0);
+        } catch (error) {
             console.log(error.message);
         }
 
@@ -106,15 +163,15 @@ export default class QQProductsTable extends LightningElement {
         const lineIndex = event.currentTarget.dataset.lineindex;
         const changedField = event.currentTarget.dataset.field;
         const changedValue = event.target.value;
-        if(changedField === 'quantity') this._quoteData[lineIndex].Quantity = changedValue;
-        if(changedField === 'unitprice') this._quoteData[lineIndex].UnitPrice = changedValue;
-        if(changedField === 'discountpc') this._quoteData[lineIndex].Discount = changedValue;
+        if (changedField === 'quantity') this._quoteData[lineIndex].Quantity = changedValue;
+        if (changedField === 'unitprice') this._quoteData[lineIndex].UnitPrice = changedValue;
+        if (changedField === 'discountpc') this._quoteData[lineIndex].Discount = changedValue;
         this.calcLine(lineIndex);
     }
 
     calcLine(lineIndex) {
         const discount = (this._quoteData[lineIndex].Discount) ? this._quoteData[lineIndex].Discount : 0;
-        this._quoteData[lineIndex].Subtotal = this._quoteData[lineIndex].Quantity * (this._quoteData[lineIndex].UnitPrice * (100 - discount)/100);
+        this._quoteData[lineIndex].Subtotal = this._quoteData[lineIndex].Quantity * (this._quoteData[lineIndex].UnitPrice * (100 - discount) / 100);
         this.updateFlow();
     }
 
@@ -134,83 +191,81 @@ export default class QQProductsTable extends LightningElement {
     }
 
     searchBlurHandler(event) {
-        
-        if(!this.isSelectingRecord) {
-            if(this.activeLineIndex >= 0) this._quoteData[this.activeLineIndex].EditMode = false;
+
+        if (!this.isSelectingRecord) {
+            if (this.activeLineIndex >= 0) this._quoteData[this.activeLineIndex].EditMode = false;
             this.searchTerm = null;
             this.searchRecords = [];
-            this._quoteData[this._quoteData.length-1].EditMode = true;
-    
-            if(this.isRecordSelected) {
+            this._quoteData[this._quoteData.length - 1].EditMode = true;
+
+            if (this.isRecordSelected) {
                 try {
-                    window.setTimeout(function () { 
-                        this.template.querySelector("[data-quantityinput='"+this.activeLineIndex+"']").focus();
+                    window.setTimeout(function () {
+                        this.template.querySelector("[data-quantityinput='" + this.activeLineIndex + "']").focus();
                     }, 0);
-                } catch(error) {
+                } catch (error) {
                     console.log(error.message);
                 }
                 this.isRecordSelected = false;
             }
             this.showSearch = false;
-    
+
         } else {
             this.isSelectingRecord = false;
         }
     }
 
     resultsKeyDownHandler(event) {
-        if(event.key==='Down' || event.key==='ArrowDown') {
+        if (event.key === 'Down' || event.key === 'ArrowDown') {
             event.preventDefault();
             try {
-                console.log(this.keyResultIndex);
-                console.log(this.searchRecords.length);
-                if(this.keyResultIndex < this.searchRecords.length-1) {
+                if (this.keyResultIndex < this.searchRecords.length - 1) {
                     this.keyResultIndex++;
-                    this.template.querySelector("li[data-index='"+this.keyResultIndex+"']").focus();
+                    this.template.querySelector("li[data-index='" + this.keyResultIndex + "']").focus();
                 }
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
-        } else if(event.key==='Up' || event.key==='ArrowUp') {
+        } else if (event.key === 'Up' || event.key === 'ArrowUp') {
             event.preventDefault();
             try {
-                if(this.keyResultIndex > 0) {
+                if (this.keyResultIndex > 0) {
                     this.keyResultIndex--;
-                    this.template.querySelector("li[data-index='"+this.keyResultIndex+"']").focus();
+                    this.template.querySelector("li[data-index='" + this.keyResultIndex + "']").focus();
                 } else {
-                    this.template.querySelector("[data-searchInput='"+this.activeLineIndex+"']").focus();
+                    this.template.querySelector("[data-searchInput='" + this.activeLineIndex + "']").focus();
                 }
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
-        } else if(event.key==='Enter' || event.key==='Tab') {
+        } else if (event.key === 'Enter' || event.key === 'Tab') {
             event.preventDefault();
             try {
-                let selected = this.template.querySelector("li[data-index='"+this.keyResultIndex+"']");
+                let selected = this.template.querySelector("li[data-index='" + this.keyResultIndex + "']");
                 var clickEvent = document.createEvent('MouseEvents');
                 clickEvent.initEvent("mousedown", true, true);
                 selected.dispatchEvent(clickEvent);
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
-        } else if(event.key==='Escape') {
+        } else if (event.key === 'Escape') {
             event.preventDefault();
             try {
-                this.template.querySelector("[data-searchInput='"+this.activeLineIndex+"']").focus();
-            } catch(error) {
+                this.template.querySelector("[data-searchInput='" + this.activeLineIndex + "']").focus();
+            } catch (error) {
                 console.log(error.message);
             }
         }
     }
 
     searchKeyDownHandler(event) {
-        if((event.key==='Down' || event.key==='ArrowDown') && this.showSearch) {
+        if ((event.key === 'Down' || event.key === 'ArrowDown') && this.showSearch) {
             event.preventDefault();
             try {
                 this.isSelectingRecord = true;
                 this.keyResultIndex = 0;
                 this.template.querySelector("li[data-index='0']").focus();
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
         }
@@ -225,19 +280,19 @@ export default class QQProductsTable extends LightningElement {
 
     addLine(focus) {
         this._quoteData.push({
-            EditMode : true,
-            AllowDelete : false,
-            ProductCode : null,
-            ProductName : null,
-            Quantity : null,
-            UnitPrice : null,
-            Subtotal : null,
-            key : this._quoteData.length
+            EditMode: true,
+            AllowDelete: false,
+            ProductCode: null,
+            ProductName: null,
+            Quantity: null,
+            UnitPrice: null,
+            Subtotal: null,
+            key: this._quoteData.length
         });
-        if(focus && this.hasRendered) {
-            try{
+        if (focus && this.hasRendered) {
+            try {
                 this.template.querySelector("[data-searchinput='0']").focus();
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
         }
@@ -245,9 +300,9 @@ export default class QQProductsTable extends LightningElement {
 
     deleteLineHandler(event) {
         const lineIndex = event.currentTarget.dataset.lineindex;
-        if(this.activeLineIndex >= 0) {
-            if(this.activeLineIndex == lineIndex) this.activeLineIndex = -1;
-            else if(this.activeLineIndex > lineIndex) this.activeLineIndex--;
+        if (this.activeLineIndex >= 0) {
+            if (this.activeLineIndex == lineIndex) this.activeLineIndex = -1;
+            else if (this.activeLineIndex > lineIndex) this.activeLineIndex--;
         }
         this._quoteData.splice(lineIndex, 1);
         this.reindexQuoteData();
@@ -255,12 +310,12 @@ export default class QQProductsTable extends LightningElement {
 
     shiftLineHandler(event) {
         const lineIndex = parseInt(event.currentTarget.dataset.lineindex);
-        this.arrayShifter(lineIndex, lineIndex+1);        
+        this.arrayShifter(lineIndex, lineIndex + 1);
     }
 
     unshiftLineHandler(event) {
         const lineIndex = parseInt(event.currentTarget.dataset.lineindex);
-        this.arrayShifter(lineIndex, lineIndex-1);        
+        this.arrayShifter(lineIndex, lineIndex - 1);
     }
 
     arrayShifter(oldIndex, newIndex) {
@@ -272,7 +327,7 @@ export default class QQProductsTable extends LightningElement {
         this._quoteData.forEach((line, index) => {
             line.key = index;
             line.First = (index == 0 ? true : false);
-            line.Last = (index == this._quoteData.length-2 ? true : false);
+            line.Last = (index == this._quoteData.length - 2 ? true : false);
         });
         this.multipleRecords = (this._quoteData.length > 2) ? true : false;
         this.updateFlow();
@@ -282,7 +337,7 @@ export default class QQProductsTable extends LightningElement {
         event.preventDefault();
         const target = event.target;
         let parentObj = target.parentNode;
-        while(parentObj.tagName != 'TH') {
+        while (parentObj.tagName != 'TH') {
             parentObj = parentObj.parentNode;
         }
         this.parentObj = parentObj;
@@ -292,36 +347,36 @@ export default class QQProductsTable extends LightningElement {
     }
 
     resizeDrag(event) {
-        if(this.mouseDown) {
+        if (this.mouseDown) {
             event.preventDefault();
             const start = parseFloat(this.mouseStart);
             const end = parseFloat(event.clientX);
-            const diff = parseFloat(end-start);
+            const diff = parseFloat(end - start);
             const oldWidth = parseFloat(this.widthStart);
             const newWidth = oldWidth + diff;
-            this.parentObj.style.width = newWidth+'px';
+            this.parentObj.style.width = newWidth + 'px';
         }
     }
 
     resizeMouseUp(event) {
         event.preventDefault();
-        if(this.mouseDown) this.mouseDown = false;
+        if (this.mouseDown) this.mouseDown = false;
     }
 
 
     updateFlow() {
         let quoteData = [];
-        this._quoteData.forEach((line, index) => { 
-            if(index < this.quoteData.length-1) {
+        this._quoteData.forEach((line, index) => {
+            if (index < this.quoteData.length - 1) {
                 quoteData.push({
-                    QuoteId : this.quoteId,
-                    PricebookEntryId : line.PricebookEntryId,
-                    Product2Id : line.Product2Id,
-                    Quantity : line.Quantity,
-                    UnitPrice : line.Subtotal / line.Quantity,
-                    Discount : line.Discount,
-                    Subtotal : line.Subtotal,
-                    TotalPrice : line.Subtotal
+                    QuoteId: this.quoteId,
+                    PricebookEntryId: line.PricebookEntryId,
+                    Product2Id: line.Product2Id,
+                    Quantity: line.Quantity,
+                    UnitPrice: line.Subtotal / line.Quantity,
+                    Discount: line.Discount,
+                    Subtotal: line.Subtotal,
+                    TotalPrice: line.Subtotal
                 });
             }
         });
@@ -333,11 +388,11 @@ export default class QQProductsTable extends LightningElement {
     }
 
     renderedCallback() {
-        if(!this.hasRendered) {
-            try{
+        if (!this.hasRendered) {
+            try {
                 this.template.querySelector("[data-searchinput='0']").focus();
                 this.hasRendered = true;
-            } catch(error) {
+            } catch (error) {
                 console.log(error.message);
             }
         }
