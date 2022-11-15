@@ -238,7 +238,7 @@
               <!-- Delete Button -->
               <td aria-readonly="true" class="slds-cell-edit slds-cell_action-mode" role="gridcell">
                 <template if:true={quoteline.value.AllowDelete}>
-                  <button onclick={deleteLineHandler} data-lineindex={quoteline.index}
+                  <button onclick={deleteLineHandler} data-id={quoteline.value.Id} data-lineindex={quoteline.index}
                     class="slds-button slds-button_icon" tabindex="-1" title="Delete Product">
                     <svg class="slds-button__icon slds-button__icon_hint slds-button__icon_delete" aria-hidden="true">
                       <use xlink:href="/resource/QQ_ProductsTableIcons/utility-sprite/svg/symbols.svg#delete"></use>

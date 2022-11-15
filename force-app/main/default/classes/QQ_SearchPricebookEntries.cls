@@ -1,6 +1,13 @@
 public with sharing class QQ_SearchPricebookEntries {
     
     @AuraEnabled
+    public static List<QuoteLineItem> getQuoteLines(String quoteId) {
+        List<QuoteLineItem> qlis = [SELECT Id, PricebookEntryId, PricebookEntry.UnitPrice, Product2Id, Product2.Name, Product2.ProductCode, Quantity, UnitPrice, Discount FROM QuoteLineItem WHERE QuoteId = :quoteId ORDER BY LineNumber ASC];
+        return qlis;
+    }
+
+
+    @AuraEnabled
     public static Integer getTotalPricebookEntryCount(String keyword, String pricebookId) {
         if(keyword != null && keyword != '') {
     	    return [SELECT Count() FROM PricebookEntry WHERE (Name LIKE :('%'+keyword+'%') OR ProductCode LIKE :('%'+keyword+'%')) AND Pricebook2Id=:pricebookId AND IsActive=TRUE];        

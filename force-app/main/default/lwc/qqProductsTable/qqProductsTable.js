@@ -3,6 +3,7 @@ import { FlowAttributeChangeEvent } from 'lightning/flowSupport';
 import qqProductsSearchModal from 'c/qqProductsSearchModal';
 
 import getResults from '@salesforce/apex/QQ_SearchPricebookEntries.getResults';
+import getQuoteLines from '@salesforce/apex/QQ_SearchPricebookEntries.getQuoteLines';
 
 export default class QQProductsTable extends LightningElement {
 
@@ -10,8 +11,10 @@ export default class QQProductsTable extends LightningElement {
     @api pricebookId;
     @api quoteId;
 
-    // Input/Output Parameters
+    // Output Parameters
     @api quoteLineItems;
+    @api deletedQuoteLineItems = [];
+    _deletedQuoteLineItems = [];
 
     @api searchTerm = '';
     @api searchRecords = [];
@@ -72,6 +75,7 @@ export default class QQProductsTable extends LightningElement {
         const lineIndex = event.currentTarget.dataset.lineindex;
         const selectedRecord = this.searchRecords[index];
         let line = {
+            Id: null,
             PricebookEntryId: selectedRecord.Id,
             Product2Id: selectedRecord.Product2Id,
             ProductCode: selectedRecord.ProductCode,
@@ -112,7 +116,7 @@ export default class QQProductsTable extends LightningElement {
             size: 'large',
             pricebookId: this.pricebookId
         }).then((result) => {
-            if(typeof result !== 'undefined') {
+            if (typeof result !== 'undefined') {
                 if (result.length > 0) {
                     this.modalResults = result;
                     this.processModalResults();
@@ -126,6 +130,7 @@ export default class QQProductsTable extends LightningElement {
         this.modalResults.forEach(selectedEntry => {
             let lineIndex = this._quoteData.length;
             let line = {
+                Id: null,
                 PricebookEntryId: selectedEntry.Id,
                 Product2Id: selectedEntry.Product2Id,
                 ProductCode: selectedEntry.ProductCode,
@@ -282,6 +287,7 @@ export default class QQProductsTable extends LightningElement {
         this._quoteData.push({
             EditMode: true,
             AllowDelete: false,
+            Id: null,
             ProductCode: null,
             ProductName: null,
             Quantity: null,
@@ -300,6 +306,14 @@ export default class QQProductsTable extends LightningElement {
 
     deleteLineHandler(event) {
         const lineIndex = event.currentTarget.dataset.lineindex;
+        let entryId = event.currentTarget.dataset.id;
+
+        console.log('Deleting: ' + entryId);
+
+        this._deletedQuoteLineItems.push({ Id : entryId });
+
+        console.log(JSON.stringify(this._deletedQuoteLineItems));
+
         if (this.activeLineIndex >= 0) {
             if (this.activeLineIndex == lineIndex) this.activeLineIndex = -1;
             else if (this.activeLineIndex > lineIndex) this.activeLineIndex--;
@@ -369,26 +383,58 @@ export default class QQProductsTable extends LightningElement {
         this._quoteData.forEach((line, index) => {
             if (index < this.quoteData.length - 1) {
                 quoteData.push({
+                    Id: line.Id,
                     QuoteId: this.quoteId,
                     PricebookEntryId: line.PricebookEntryId,
                     Product2Id: line.Product2Id,
                     Quantity: line.Quantity,
-                    UnitPrice: line.Subtotal / line.Quantity,
-                    Discount: line.Discount,
-                    Subtotal: line.Subtotal,
-                    TotalPrice: line.Subtotal
+                    UnitPrice: line.UnitPrice,
+                    Discount: line.Discount
                 });
             }
         });
+        this.deletedQuoteLineItems = this._deletedQuoteLineItems;
         this.dispatchEvent(new FlowAttributeChangeEvent('quoteLineItems', quoteData));
+        this.dispatchEvent(new FlowAttributeChangeEvent('deletedQuoteLineItems', this.deletedQuoteLineItems));
+    }
+
+    processQuoteLines() {
+
+        getQuoteLines({ quoteId: this.quoteId })
+            .then(result => {
+                console.log(JSON.stringify(result));
+                result.forEach((quoteLine, index) => {
+                    const lineIndex = this._quoteData.length;
+                    this._quoteData.push({
+                        Id: quoteLine.Id,
+                        PricebookEntryId: quoteLine.PricebookEntryId,
+                        Product2Id: quoteLine.Product2Id,
+                        ProductCode: quoteLine.Product2.ProductCode,
+                        ProductName: quoteLine.Product2.Name,
+                        UnitPrice: quoteLine.PricebookEntry.UnitPrice,
+                        Quantity: quoteLine.Quantity,
+                        Discount: quoteLine.Discount,
+                        key: lineIndex,
+                        EditMode: false,
+                        AllowDelete: true
+                    });
+                    this.calcLine(lineIndex);
+                });
+                this.addLine(false);
+
+            })
+            .catch(error => {
+                console.log(error.message);
+            });
+
     }
 
     connectedCallback() {
-        this.addLine(false);
+        this.processQuoteLines();
     }
 
     renderedCallback() {
-        if (!this.hasRendered) {
+        if (!this.hasRendered && this._quoteData.length == 1) {
             try {
                 this.template.querySelector("[data-searchinput='0']").focus();
                 this.hasRendered = true;
