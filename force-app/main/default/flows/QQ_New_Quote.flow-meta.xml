@@ -705,7 +705,7 @@
                     </defaultValue>
                     <fieldText>Quote Expiry</fieldText>
                     <fieldType>InputField</fieldType>
-                    <isRequired>false</isRequired>
+                    <isRequired>true</isRequired>
                 </fields>
                 <fields>
                     <name>Opportunity_Name</name>
@@ -715,7 +715,7 @@
                     </defaultValue>
                     <fieldText>Opportunity Name</fieldText>
                     <fieldType>InputField</fieldType>
-                    <isRequired>false</isRequired>
+                    <isRequired>true</isRequired>
                 </fields>
                 <fields>
                     <name>Related_Contact</name>
@@ -723,7 +723,7 @@
                     <dataType>String</dataType>
                     <fieldText>Related Contact</fieldText>
                     <fieldType>DropdownBox</fieldType>
-                    <isRequired>false</isRequired>
+                    <isRequired>true</isRequired>
                 </fields>
                 <inputParameters>
                     <name>width</name>
@@ -745,7 +745,7 @@
                     </defaultValue>
                     <fieldText>Price Book</fieldText>
                     <fieldType>DropdownBox</fieldType>
-                    <isRequired>false</isRequired>
+                    <isRequired>true</isRequired>
                 </fields>
                 <fields>
                     <name>Opportunity_Type</name>
@@ -831,7 +831,7 @@
             <targetReference>First_Run</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <variables>
         <name>recordId</name>
         <dataType>String</dataType>
